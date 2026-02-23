@@ -12,10 +12,14 @@ data "aws_ami" "amazon_linux" {
 resource "aws_instance" "web" {
   ami                  = data.aws_ami.amazon_linux.id
   instance_type        = var.instance_type
-  subnet_id            = aws_subnet.private[0].id # En la primera subnet privada
-  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
+  subnet_id            = var.subnet_ids[0] # En la primera subnet privada
+  iam_instance_profile = var.iam_instance_profile
 
   tags = merge(local.common_tags, { Name = "WebInstance" })
+
+  root_block_device {
+    tags = merge(local.common_tags, { Name = "WebRootVolume" })
+  }
 }
 
 resource "aws_ebs_volume" "extra" {
