@@ -34,8 +34,8 @@ Use this checklist to quickly get the project up and running.
 
 3. **Initialize Terragrunt**
    ```bash
-   cd live/dev
-   terragrunt init              # Initialize all modules
+   cd live/dev/eu-west-1        # Navigate to a region
+   terragrunt run --all init    # Initialize all 4 modules
    ```
 
 4. **Validate Configuration**
@@ -45,37 +45,51 @@ Use this checklist to quickly get the project up and running.
 
 ## Deployment
 
-### Option A: Simple Auto-Approve
+### Option A: Deploy All 4 Units
 ```bash
+cd live/dev/eu-west-1
+
 # Plan all infrastructure
 terragrunt run --all plan
 
-# Deploy everything (no confirmation)
-terragrunt run --all apply --auto-approve
+# Deploy everything
+terragrunt run --all apply
 
 # Verify deployment
-aws ec2 describe-instances --region us-east-1
+aws ec2 describe-instances --region eu-west-1
 ```
 
-### Option B: Review Before Applying
+### Option B: Deploy Selectively (Exclude ebs_orphan)
 ```bash
-# Plan all infrastructure
-terragrunt run --all plan > deployment.plan
+cd live/dev/eu-west-1
 
-# Review the plan file
-cat deployment.plan
+# Plan all except ebs_orphan (iam, vpc, ec2 only)
+terragrunt run --all plan --filter '!./ebs_orphan'
 
-# Deploy with confirmation
-terragrunt run --all apply
-# Type 'yes' to confirm
+# Deploy all except ebs_orphan
+terragrunt run --all apply --filter '!./ebs_orphan'
 ```
 
-### Option C: Module-by-Module
+### Option C: Deploy ebs_orphan Only
 ```bash
+cd live/dev/eu-west-1
+
+# Plan only ebs_orphan
+terragrunt run --all plan --filter './ebs_orphan'
+
+# Deploy only ebs_orphan
+terragrunt run --all apply --filter './ebs_orphan'
+```
+
+### Option D: Module-by-Module (Manual Order)
+```bash
+cd live/dev/eu-west-1
+
 # Deploy IAM first
-cd vpc && terragrunt run -- apply --auto-approve
-cd ../iam && terragrunt run -- apply --auto-approve
-cd ../ec2 && terragrunt run -- apply --auto-approve
+cd iam && terragrunt apply
+cd ../vpc && terragrunt apply
+cd ../ec2 && terragrunt apply
+cd ../ebs_orphan && terragrunt apply  # Optional
 ```
 
 ## Verification
@@ -100,18 +114,23 @@ aws s3 ls s3://tom-my-tf-state --recursive
 
 ### View Outputs
 ```bash
-cd live/dev/vpc && terragrunt run -- output subnet_ids
-cd ../iam && terragrunt run -- output ec2_instance_profile
-cd ../ec2 && terragrunt run -- output ec2_id
+cd live/dev/eu-west-1/vpc && terragrunt output subnet_ids
+cd ../iam && terragrunt output ec2_instance_profile
+cd ../ec2 && terragrunt output ec2_id
 ```
 
 ### Clean Up
 ```bash
-# Destroy all (with confirmation)
+cd live/dev/eu-west-1
+
+# Destroy all 4 modules
 terragrunt run --all destroy
 
+# Destroy all except ebs_orphan
+terragrunt run --all destroy --filter '!./ebs_orphan'
+
 # Destroy specific module
-cd live/dev/ec2 && terragrunt run -- destroy --auto-approve
+cd ./ec2 && terragrunt destroy
 ```
 
 ### Debug
@@ -120,10 +139,10 @@ cd live/dev/ec2 && terragrunt run -- destroy --auto-approve
 export TG_LOG_LEVEL=debug
 
 # Validate syntax
-terragrunt run --all validate
+cd live/dev/eu-west-1 && terragrunt run --all validate
 
-# Check what would be executed (dry-run)
-terragrunt run --all --dry-run plan
+# Validate specific modules only
+terragrunt run --all validate --filter '!./ebs_orphan'
 ```
 
 ## Helper Script Usage
@@ -241,16 +260,14 @@ aws ec2 describe-volumes --query 'Volumes[].[VolumeId,Size,State,Tags[0].Value]'
 
 | Task | Command |
 |------|---------|
-| Plan all | `terragrunt run --all plan` |
-| Apply all | `terragrunt run --all apply --auto-approve` |
-| Destroy all | `terragrunt run --all destroy --auto-approve` |
-| Plan VPC | `cd live/dev/vpc && terragrunt run -- plan` |
-| View outputs | `terragrunt run -- output` |
-| Validate | `terragrunt run --all validate` |
-| Check status | `./terragrunt-wrapper.sh status` |
-| View help | `./terragrunt-wrapper.sh help` |
-
-## Support
+| Plan all | `cd live/dev/eu-west-1 && terragrunt run --all plan` |
+| Apply all | `terragrunt run --all apply` |
+| Apply (exclude ebs_orphan) | `terragrunt run --all apply --filter '!./ebs_orphan'` |
+| Apply (only ebs_orphan) | `terragrunt run --all apply --filter './ebs_orphan'` |
+| Destroy all | `terragrunt run --all destroy` |
+| Plan single module | `cd live/dev/eu-west-1/vpc && terragrunt plan` |
+| View outputs | `cd vpc && terragrunt output` |
+| Validate all | `terragrunt run --all validate` |
 
 - Check [README.md](README.md) for overview
 - See [docs/STRUCTURE.md](docs/STRUCTURE.md) for architecture

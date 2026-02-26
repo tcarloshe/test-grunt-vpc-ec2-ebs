@@ -1,50 +1,81 @@
 # Terragrunt v0.99.4 Migration Guide
 
-Terragrunt v0.99.4 includes a CLI redesign. Here are the key command changes:
+Terragrunt v0.99.4 includes a CLI redesign. Here's the **working command syntax** with the latest best practices:
 
-## New Command Syntax
+## Working Command Syntax
 
-### Run-all Commands (for executing across all modules)
+### Run-all Commands (for executing across all modules in a region)
 
-| Operation | Old Syntax | New Syntax |
-|-----------|-----------|-----------|
-| Plan all | `terragrunt run-all plan` | `terragrunt run -- run-all plan` |
-| Apply all | `terragrunt run-all apply` | `terragrunt run -- run-all apply` |
-| Destroy all | `terragrunt run-all destroy` | `terragrunt run -- run-all destroy` |
-| Validate all | `terragrunt run-all validate` | `terragrunt run -- run-all validate` |
+Navigate to a region directory (e.g., `live/dev/eu-west-1`) and run:
+
+```bash
+# Plan all 4 modules (iam, vpc, ec2, ebs_orphan)
+terragrunt run --all plan
+
+# Apply all 4 modules
+terragrunt run --all apply
+
+# Destroy all modules
+terragrunt run --all destroy
+
+# Validate all modules
+terragrunt run --all validate
+```
+
+### Selective Deployment (Filtering)
+
+```bash
+# Apply all except ebs_orphan (typical for initial deployment)
+terragrunt run --all apply --filter '!./ebs_orphan'
+
+# Apply only ebs_orphan
+terragrunt run --all apply --filter './ebs_orphan'
+
+# Apply only vpc and ec2
+terragrunt run --all apply --filter './vpc' --filter './ec2'
+
+# Validate all except ebs_orphan
+terragrunt run --all validate --filter '!./ebs_orphan'
+```
 
 ### Single Module Commands
 
-| Operation | Old Syntax | New Syntax |
-|-----------|-----------|-----------|
-| Plan | `terragrunt plan` | `terragrunt run -- plan` or `terragrunt plan` |
-| Apply | `terragrunt apply` | `terragrunt run -- apply` or `terragrunt apply` |
-| Destroy | `terragrunt destroy` | `terragrunt run -- destroy` or `terragrunt destroy` |
-| Validate | `terragrunt validate` | `terragrunt run -- validate` or `terragrunt validate` |
-
-**Note**: Single module commands may still work with the old syntax for backwards compatibility, but the new syntax is preferred.
-
-## Usage Examples
-
-Navigate to the `live/dev` directory and run:
+From within a module directory (e.g., `live/dev/eu-west-1/vpc`):
 
 ```bash
-# Plan all modules (VPC, IAM, EC2)
-terragrunt run -- run-all plan
+terragrunt plan
+terragrunt apply
+terragrunt destroy
+terragrunt validate
+```
 
-# Apply all modules with auto-approval
-terragrunt run -- run-all apply --auto-approve
+## Typical Deployment Workflow
 
-# Destroy all modules
-terragrunt run -- run-all destroy --auto-approve
+```bash
+# Navigate to a region directory
+cd live/dev/eu-west-1
 
-# Plan only specific module (from live/dev directory)
-cd vpc && terragrunt run -- plan
+# Step 1: Plan everything
+terragrunt run --all plan
+
+# Step 2: Deploy infrastructure (excluding ebs_orphan initially)
+terragrunt run --all apply --filter '!./ebs_orphan'
+
+# Step 3: Verify infrastructure
+aws ec2 describe-vpcs --region eu-west-1
+aws ec2 describe-instances --region eu-west-1
+aws iam list-instance-profiles
+
+# Step 4: Deploy ebs_orphan when ready
+terragrunt run --all apply --filter './ebs_orphan'
+
+# Step 5: Destroy when done
+terragrunt run --all destroy
 ```
 
 ## Using the Helper Script
 
-For easier command execution, use the provided `tg` wrapper script:
+For easier command execution, use the provided wrapper script:
 
 ```bash
 # Make it executable
@@ -56,8 +87,30 @@ chmod +x terragrunt-wrapper.sh
 # Apply all modules
 ./terragrunt-wrapper.sh apply-all
 
-# List all available shortcuts
+# Destroy all modules with confirmation
+./terragrunt-wrapper.sh destroy-all-confirm
+
+# List all available commands
 ./terragrunt-wrapper.sh help
+```
+
+## Using Shell Aliases (Fastest!)
+
+Source the aliases in your `~/.bashrc` or `~/.zshrc`:
+
+```bash
+source /home/tcarlos/grunt/test-grunt-vpc-ec2-ebs/terragrunt-aliases.sh
+```
+
+Then use shortcut commands from anywhere:
+
+```bash
+tg-plan-all          # Plan all modules
+tg-apply-all         # Apply all modules
+tg-destroy-all       # Destroy all (auto-approve)
+tg-destroy-all-confirm # Destroy all (with confirmation)
+tg-status            # Show deployment status
+tg-help              # Show all available commands
 ```
 
 ## References

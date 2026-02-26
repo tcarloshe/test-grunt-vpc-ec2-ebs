@@ -6,33 +6,46 @@ Your Terragrunt infrastructure has been updated to support v0.99.4. Here's how t
 
 ## Quick Commands
 
-### From the `live/dev` directory:
+### From a region directory (e.g., `live/dev/eu-west-1`):
 
 ```bash
-# Plan all infrastructure
-terragrunt run -- run-all plan
+# Plan all 4 units (iam, vpc, ec2, ebs_orphan)
+terragrunt run --all plan
 
-# Apply all infrastructure (auto-approve)
-terragrunt run -- run-all apply --auto-approve
+# Apply all 4 units
+terragrunt run --all apply
 
-# Destroy all infrastructure (auto-approve)
-terragrunt run -- run-all destroy --auto-approve
+# Destroy all infrastructure
+terragrunt run --all destroy
 
 # Validate all modules
-terragrunt run -- run-all validate
+terragrunt run --all validate
 ```
 
-### From individual module directories (e.g., `live/dev/vpc`):
+### Selective Deployment with Filters
+
+```bash
+# Apply all except ebs_orphan (deploy iam, vpc, ec2)
+terragrunt run --all apply --filter '!./ebs_orphan'
+
+# Apply only ebs_orphan
+terragrunt run --all apply --filter './ebs_orphan'
+
+# Apply only vpc and ec2
+terragrunt run --all apply --filter './vpc' --filter './ec2'
+```
+
+### From individual module directories (e.g., `live/dev/eu-west-1/vpc`):
 
 ```bash
 # Plan this module only
-terragrunt run -- plan
+terragrunt plan
 
 # Apply this module
-terragrunt run -- apply --auto-approve
+terragrunt apply
 
 # Destroy this module
-terragrunt run -- destroy --auto-approve
+terragrunt destroy
 ```
 
 ## Using the Wrapper Script (Easier!)
@@ -65,22 +78,25 @@ tg-status
 tg-help
 ```
 
-## Key Changes from Old Syntax
+## Usage Pattern
 
-| Old | New |
-|-----|-----|
-| `terragrunt run-all plan` | `terragrunt run -- run-all plan` |
-| `terragrunt run-all apply` | `terragrunt run -- run-all apply` |
-| `terragrunt run-all destroy` | `terragrunt run -- run-all destroy` |
+The recommended workflow is:
+
+1. **Navigate to a region directory**: `cd /home/tcarlos/grunt/test-grunt-vpc-ec2-ebs/live/dev/eu-west-1`
+2. **Plan changes**: `terragrunt run --all plan`
+3. **Apply with selective filters** (if needed): `terragrunt run --all apply --filter '!./ebs_orphan'`
+4. **Deploy specific units later**: `terragrunt run --all apply --filter './ebs_orphan'`
+5. **Destroy when done**: `terragrunt run --all destroy`
 
 ## Your Infrastructure
 
-Your Terragrunt setup includes:
-- **VPC Module** (`live/dev/vpc/`) - AWS VPC with subnets
-- **IAM Module** (`live/dev/iam/`) - IAM roles and policies
-- **EC2 Module** (`live/dev/ec2/`) - EC2 instances with EBS volumes
+Your Terragrunt setup includes 4 modules per region:
+- **IAM Module** (`./iam/`) - IAM roles and policies
+- **VPC Module** (`./vpc/`) - AWS VPC with subnets
+- **EC2 Module** (`./ec2/`) - EC2 instances with EBS volumes
+- **EBS Orphan Module** (`./ebs_orphan/`) - Orphaned EBS volumes
 
-The EC2 module depends on both VPC and IAM, so apply order is automatic.
+The EC2 module depends on both VPC and IAM, so apply order is automatic. You can exclude ebs_orphan if not needed.
 
 ## Troubleshooting
 

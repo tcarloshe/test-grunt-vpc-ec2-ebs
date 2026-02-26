@@ -15,20 +15,26 @@ A modern infrastructure-as-code project using **Terragrunt v0.99.4** and **Terra
 ### Deploy Infrastructure
 
 ```bash
-# Navigate to development environment
-cd live/dev
+# Navigate to a region (e.g., dev/eu-west-1)
+cd live/dev/eu-west-1
 
-# Review planned changes
+# Review planned changes for all 4 modules
 terragrunt run --all plan
 
-# Deploy infrastructure (auto-approve)
-terragrunt run --all apply --auto-approve
+# Deploy all infrastructure
+terragrunt run --all apply
+
+# Or deploy excluding ebs_orphan (typical for initial deployment)
+terragrunt run --all apply --filter '!./ebs_orphan'
+
+# Later, deploy only ebs_orphan
+terragrunt run --all apply --filter './ebs_orphan'
 
 # Validate configuration
 terragrunt run --all validate
 
-# Clean up resources
-terragrunt run --all destroy --auto-approve
+# Destroy when done
+terragrunt run --all destroy
 ```
 
 ### Using Helper Scripts
@@ -106,25 +112,29 @@ terragrunt run --all destroy --auto-approve
 
 ```bash
 # Plan only VPC
-cd live/dev/vpc
-terragrunt run -- plan
+cd live/dev/eu-west-1/vpc
+terragrunt plan
 
 # Apply only IAM
 cd ../iam
-terragrunt run -- apply --auto-approve
+terragrunt apply
 
 # Check outputs
-terragrunt run -- output
+terragrunt output
 ```
 
 ### Debugging
 
 ```bash
 # Validate configuration
+cd live/dev/eu-west-1
 terragrunt run --all validate
 
-# Show all modules that will be processed
-terragrunt run --all --dry-run plan
+# Validate excluding ebs_orphan
+terragrunt run --all validate --filter '!./ebs_orphan'
+
+# Show current status
+./terragrunt-wrapper.sh status
 
 # Clean cache and lock files
 find . -type d -name ".terragrunt-cache" -exec rm -rf {} + 2>/dev/null
