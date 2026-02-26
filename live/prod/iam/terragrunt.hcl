@@ -7,13 +7,13 @@ terraform {
 }
 
 inputs = {
-  environment = "dev"
+  environment = "prod"
   region = "us-east-1"
   
   tags = {
-    environment   = "dev"
+    environment   = "prod"
     created_by    = "Tom"
-    creation_date = "2026-02-24"
+    creation_date = "2026-02-25"
     project       = "Terraform WorkShop"
   }
 }

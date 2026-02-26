@@ -1,3 +1,36 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+  
+  backend "s3" {
+    # Configuration provided by Terragrunt
+  }
+}
+
+provider "aws" {
+  region = var.region
+}
+
+locals {
+  common_tags = merge(
+    var.tags,
+    {
+      repository_url  = var.repository_url
+      repository_path = var.repository_path
+      managed_by      = var.managed_by
+      cost_center     = var.cost_center
+      app_owner       = var.app_owner
+      app_owner_email = var.app_owner_email
+      creator_email   = var.creator_email
+      tickets         = var.tickets
+    }
+  )
+}
+
 # Data source para AMI latest Amazon Linux 2
 data "aws_ami" "amazon_linux" {
   most_recent = true
@@ -15,10 +48,10 @@ resource "aws_instance" "web" {
   subnet_id            = var.subnet_ids[0] # En la primera subnet privada
   iam_instance_profile = var.iam_instance_profile
 
-  tags = merge(local.common_tags, { Name = "WebInstance" })
+  tags = merge(local.common_tags, { Name = "${var.environment}_WebInstance" })
 
   root_block_device {
-    tags = merge(local.common_tags, { Name = "WebRootVolume" })
+    tags = merge(local.common_tags, { Name = "${var.environment}_WebRootVolume" })
   }
 }
 
@@ -30,7 +63,7 @@ resource "aws_ebs_volume" "extra" {
   type              = "gp3"
   encrypted         = true
 
-  tags = merge(local.common_tags, { Name = "ExtraVolume${count.index + 1}" })
+  tags = merge(local.common_tags, { Name = "${var.environment}_ExtraVolume${count.index + 1}" })
 }
 
 resource "aws_volume_attachment" "extra_attach" {
