@@ -3,7 +3,7 @@ include {
 }
 
 terraform {
-  source = "../../../modules/ec2"
+  source = "../../../../modules/ec2"
 }
 
 # Dependencies on other modules
@@ -11,7 +11,7 @@ dependency "vpc" {
   config_path = "../vpc"
   
   mock_outputs = {
-    subnet_ids = ["subnet-mock-1", "subnet-mock-2"]
+    subnet_ids = ["subnet-mock-1", "subnet-mock-2", "subnet-mock-3"]
   }
   skip_outputs = false
 }
@@ -28,7 +28,7 @@ dependency "iam" {
 inputs = merge(
   {
     environment   = "prod"
-    region        = "us-east-1"
+    region        = "mx-central-1"
     instance_type = "t3.small"
     ebs_sizes     = [20, 20, 10, 10, 15]
     
@@ -37,6 +37,7 @@ inputs = merge(
       created_by    = "Tom"
       creation_date = "2026-02-25"
       project       = "Terraform WorkShop"
+      region        = "Mexico"
     }
   },
   {
